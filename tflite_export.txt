@@ -1,0 +1,49 @@
+# Install the necessary packages (if not already installed)
+!pip install -q ultralytics tensorflow
+
+# Import libraries
+from ultralytics import YOLO
+import tensorflow as tf
+import os
+
+# Load your YOLOv8 model
+model = YOLO('yolov8n.pt')  # or use the path to your custom model
+
+# Export to TFLite format
+print("Exporting model to TFLite format...")
+model.export(format='tflite', 
+             nms=True,           # Include Non-Maximum Suppression
+             int8=False,         # Don't use int8 quantization
+             half=False,         # Don't use float16 (half precision)
+             data='dataset.yaml' if os.path.exists('dataset.yaml') else None  # Optional: include dataset info
+            )
+
+# Check the exported file
+!ls -lh *tflite
+
+# Print information about the exported model
+print("\nTFLite model information:")
+try:
+    # Load the TFLite model and print details
+    interpreter = tf.lite.Interpreter(model_path="yolov8n.tflite")
+    interpreter.allocate_tensors()
+    
+    # Get input and output details
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+    
+    print("Input details:")
+    for detail in input_details:
+        print(f"  - Name: {detail['name']}")
+        print(f"  - Shape: {detail['shape']}")
+        print(f"  - Type: {detail['dtype']}")
+    
+    print("\nOutput details:")
+    for detail in output_details:
+        print(f"  - Name: {detail['name']}")
+        print(f"  - Shape: {detail['shape']}")
+        print(f"  - Type: {detail['dtype']}")
+except Exception as e:
+    print(f"Error analyzing TFLite model: {e}")
+
+print("\nExport complete! Your TFLite model is ready for mobile deployment.")
